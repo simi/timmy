@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>🐋 Timmy na Novinkách - časová osa</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #e9f7fb;
+      --ink: #08283a;
+      --muted: #526f7c;
+      --line: #0987b8;
+      --deep: #06364b;
+      --card: #f7fcff;
+      --shadow: 0 18px 40px rgba(0, 76, 112, .16);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(0, 174, 214, .22), transparent 32rem),
+        radial-gradient(circle at 80% 75%, rgba(55, 191, 224, .18), transparent 30rem),
+        linear-gradient(135deg, #f2fbff 0%, var(--bg) 54%, #d8eef7 100%);
+      color: var(--ink);
+      font-family: Georgia, 'Times New Roman', serif;
+      min-height: 100vh;
+    }
+    header {
+      padding: clamp(1.4rem, 4vw, 3.5rem) clamp(1rem, 5vw, 4rem) 1rem;
+      max-width: 1180px;
+    }
+    h1 {
+      font-size: clamp(2rem, 7vw, 5rem);
+      line-height: .95;
+      margin: 0 0 .8rem;
+      letter-spacing: -.05em;
+    }
+    .dek {
+      color: var(--muted);
+      font-family: system-ui, sans-serif;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      margin: 0;
+      max-width: 720px;
+    }
+    .timeline-shell {
+      padding: 2rem clamp(1rem, 5vw, 4rem) 3rem;
+    }
+    .stats {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 1.25rem clamp(1rem, 5vw, 4rem) 0;
+      max-width: 1280px;
+    }
+    .stat {
+      background: rgba(247, 252, 255, .78);
+      border: 1px solid rgba(8, 40, 58, .12);
+      border-radius: 18px;
+      box-shadow: 0 10px 26px rgba(0, 76, 112, .09);
+      padding: 1rem;
+    }
+    .stat-label {
+      color: var(--muted);
+      font-family: system-ui, sans-serif;
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .stat-value {
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      line-height: 1.05;
+      margin-top: .35rem;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .55rem;
+      padding: 1.25rem clamp(1rem, 5vw, 4rem) 0;
+    }
+    .filter {
+      background: #f7fcff;
+      border: 1px solid rgba(8, 40, 58, .16);
+      border-radius: 999px;
+      color: var(--ink);
+      cursor: pointer;
+      font-family: system-ui, sans-serif;
+      font-size: .92rem;
+      padding: .58rem .82rem;
+    }
+    .filter[aria-pressed="true"] {
+      background: var(--line);
+      border-color: var(--line);
+      color: white;
+    }
+    .timeline {
+      --pad-top: 1.4rem;
+      --rail-y: 250px;
+      --rail-width: 100%;
+      align-items: stretch;
+      display: flex;
+      min-height: 560px;
+      overflow-x: auto;
+      overflow-y: visible;
+      padding: var(--pad-top) 2rem 1rem;
+      position: relative;
+      scroll-snap-type: x mandatory;
+      scrollbar-color: var(--line) rgba(255,255,255,.6);
+    }
+    .timeline::before {
+      background:
+        linear-gradient(90deg, transparent 0, rgba(9,135,184,.28) 1.5rem, var(--line) 4rem, var(--line) calc(100% - 4rem), rgba(9,135,184,.28) calc(100% - 1.5rem), transparent 100%),
+        repeating-linear-gradient(90deg, transparent 0 118px, rgba(255,255,255,.7) 118px 121px);
+      content: '';
+      height: 6px;
+      left: 0;
+      position: absolute;
+      top: calc(var(--rail-y) - 3px);
+      width: var(--rail-width);
+      z-index: 0;
+    }
+    .month-marker {
+      align-self: stretch;
+      flex: 0 0 64px;
+      margin-left: var(--gap, 32px);
+      position: relative;
+      z-index: 1;
+    }
+    .month-marker::before {
+      background: rgba(6, 54, 75, .38);
+      content: '';
+      height: 44px;
+      left: 50%;
+      position: absolute;
+      top: calc(var(--rail-y) - 19px - var(--pad-top));
+      transform: translateX(-50%);
+      width: 2px;
+    }
+    .month-marker span {
+      background: var(--deep);
+      border-radius: 999px;
+      color: white;
+      display: inline-block;
+      font-family: system-ui, sans-serif;
+      font-size: .78rem;
+      font-weight: 800;
+      left: 50%;
+      letter-spacing: .08em;
+      padding: .35rem .55rem;
+      position: absolute;
+      text-transform: uppercase;
+      top: calc(var(--rail-y) + 28px - var(--pad-top));
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .milestone {
+      align-self: stretch;
+      flex: 0 0 112px;
+      margin-left: var(--gap, 36px);
+      position: relative;
+      z-index: 2;
+    }
+    .milestone::before {
+      background: linear-gradient(var(--deep), rgba(6,54,75,.12));
+      content: '';
+      height: 76px;
+      left: 50%;
+      position: absolute;
+      top: calc(var(--rail-y) - 76px - var(--pad-top));
+      transform: translateX(-50%);
+      width: 2px;
+    }
+    .milestone::after {
+      background: var(--deep);
+      border: 4px solid #f7fcff;
+      border-radius: 999px;
+      box-shadow: 0 0 0 3px rgba(6,54,75,.14);
+      content: '';
+      height: 18px;
+      left: 50%;
+      position: absolute;
+      top: calc(var(--rail-y) - var(--pad-top));
+      transform: translate(-50%, -50%);
+      width: 18px;
+    }
+    .milestone-badge {
+      background: var(--deep);
+      border-radius: 18px 18px 18px 4px;
+      box-shadow: 0 16px 30px rgba(6,54,75,.18);
+      color: #f7fcff;
+      font-family: system-ui, sans-serif;
+      left: 50%;
+      min-width: 144px;
+      padding: .62rem .7rem;
+      position: absolute;
+      top: calc(var(--rail-y) - 142px - var(--pad-top));
+      transform: translateX(-50%);
+    }
+    .milestone.special .milestone-badge {
+      background: var(--line);
+      box-shadow: 0 16px 30px rgba(9,135,184,.2);
+    }
+    .milestone-label {
+      display: block;
+      font-size: .66rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      margin-bottom: .25rem;
+      opacity: .78;
+      text-transform: uppercase;
+    }
+    .milestone-title {
+      display: block;
+      font-size: .82rem;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+    .event {
+      flex: 0 0 clamp(310px, 25vw, 360px);
+      margin-left: var(--gap, 40px);
+      min-height: 500px;
+      position: relative;
+      scroll-snap-align: center;
+      z-index: 1;
+    }
+    .event:first-child { margin-left: 0; }
+    .tick {
+      height: 70px;
+      left: 50%;
+      position: absolute;
+      top: calc(var(--rail-y) - 14px - var(--pad-top));
+      transform: translateX(-50%);
+      width: 86px;
+      z-index: 3;
+    }
+    .dot {
+      background: var(--line);
+      border: 5px solid #f7fcff;
+      border-radius: 999px;
+      box-shadow: 0 0 0 3px rgba(9,135,184,.25), 0 8px 18px rgba(0,76,112,.2);
+      height: 28px;
+      left: 50%;
+      position: absolute;
+      top: 14px;
+      transform: translate(-50%, -50%);
+      width: 28px;
+    }
+    .tick-date {
+      background: rgba(247, 252, 255, .94);
+      border: 1px solid rgba(8, 40, 58, .12);
+      border-radius: 999px;
+      color: var(--line);
+      font-family: system-ui, sans-serif;
+      font-size: .78rem;
+      font-weight: 900;
+      left: 50%;
+      letter-spacing: .04em;
+      padding: .25rem .55rem;
+      position: absolute;
+      top: 35px;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+    .stem {
+      background: linear-gradient(var(--line), rgba(9,135,184,.08));
+      left: 50%;
+      position: absolute;
+      transform: translateX(-50%);
+      width: 3px;
+      z-index: 1;
+    }
+    .event.top .stem {
+      height: 58px;
+      top: calc(var(--rail-y) - 58px - var(--pad-top));
+    }
+    .event.bottom .stem {
+      height: 54px;
+      top: calc(var(--rail-y) + 3px - var(--pad-top));
+    }
+    .card {
+      background: color-mix(in srgb, var(--card) 94%, white);
+      border: 1px solid rgba(8, 40, 58, .12);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      color: inherit;
+      display: grid;
+      grid-template-columns: 36% 64%;
+      left: 0;
+      min-height: 178px;
+      overflow: hidden;
+      position: relative;
+      text-decoration: none;
+      transition: transform .18s ease, box-shadow .18s ease;
+      width: 100%;
+    }
+    .event.top .card {
+      top: calc(var(--rail-y) - 238px - var(--pad-top));
+    }
+    .event.bottom .card {
+      top: calc(var(--rail-y) + 72px - var(--pad-top));
+    }
+    .card:hover, .card:focus-visible {
+      box-shadow: 0 24px 52px rgba(0, 76, 112, .25);
+      outline: none;
+      transform: translateY(-6px);
+    }
+    .thumb {
+      background: #dcc9b8;
+      display: block;
+      height: 100%;
+      min-height: 178px;
+      object-fit: cover;
+      width: 100%;
+    }
+    .body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: .55rem;
+      padding: .85rem .95rem;
+    }
+    .date {
+      color: var(--line);
+      font-family: system-ui, sans-serif;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h2 {
+      font-size: 1.05rem;
+      line-height: 1.08;
+      margin: 0;
+    }
+    .author {
+      color: var(--muted);
+      font-family: system-ui, sans-serif;
+      font-size: .82rem;
+      margin-top: auto;
+    }
+    .hint {
+      color: var(--muted);
+      font-family: system-ui, sans-serif;
+      font-size: .9rem;
+      padding: 0 clamp(1rem, 5vw, 4rem) 2rem;
+    }
+    .hidden { display: none; }
+    .empty {
+      color: var(--muted);
+      font-family: system-ui, sans-serif;
+      padding: 1rem clamp(1rem, 5vw, 4rem) 0;
+    }
+    @media (max-width: 640px) {
+      .timeline-shell { padding-top: 1.25rem; }
+      .timeline { --rail-y: 230px; min-height: 520px; padding-left: 1rem; padding-right: 1rem; }
+      .event { flex-basis: 88vw; min-height: 480px; }
+      .month-marker { flex-basis: 56px; }
+      .milestone { flex-basis: 118px; }
+      .milestone-badge { min-width: 128px; }
+      .thumb { min-height: 170px; }
+      .card { min-height: 170px; border-radius: 20px; }
+      h2 { font-size: .98rem; }
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 420px) {
+      .stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🐋 Timmy na Novinkách</h1>
+    <p class="dek">Horizontální časová osa článků o velrybě Timmy. Karta otevře původní článek v nové záložce.</p>
+  </header>
+  <section class="stats" aria-label="Souhrnné statistiky">
+    <article class="stat"><div class="stat-label">Článků</div><div class="stat-value" id="totalStat"></div></article>
+    <article class="stat"><div class="stat-label">Největší rozestup</div><div class="stat-value" id="biggestGap"></div></article>
+    <article class="stat"><div class="stat-label">Nejkratší rozestup</div><div class="stat-value" id="shortestGap"></div></article>
+    <article class="stat"><div class="stat-label">Nejaktivnější autor</div><div class="stat-value" id="topAuthor"></div></article>
+  </section>
+  <nav class="filters" id="filters" aria-label="Filtrovat podle autora"></nav>
+  <p class="empty hidden" id="empty">Pro vybraný filtr nejsou žádné články.</p>
+  <main class="timeline-shell">
+    <section class="timeline" id="timeline" aria-label="Časová osa článků"></section>
+  </main>
+  <p class="hint">Posunujte do strany. Zobrazeno: <span id="count"></span>.</p>
+  <script>
+    const articles = [
+  {
+    "dateTime": "2026-03-24 13:45:26",
+    "title": "U německých břehů uvázla velryba",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/nCTUX1iX5CGpNZJGVGJftRK/02ea/nemecko-keporkak-velryba.jpeg",
+    "author": "ČTK, Zuzana Křesťanová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-u-nemeckych-brehu-uvazla-velryba-40569605"
+  },
+  {
+    "dateTime": "2026-03-27 11:25:21",
+    "title": "FOTO: Obří záchranná akce, v Německu vyprošťovali uvízlého keporkaka",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/kcHp2YdDtDrxR2KQUGLKgEy/ae1d.jpeg",
+    "author": "Vojtěch Man",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-foto-obri-zachranna-akce-v-nemecku-vyprostovali-uvizleho-keporkaka-40570205"
+  },
+  {
+    "dateTime": "2026-03-28 17:07:05",
+    "title": "Velryba už podruhé uvázla na německé mělčině ",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/kcHp2YdDtDrxR2KQUGLKgEy/ae1d.jpeg",
+    "author": "Filip Šára",
+    "link": "https://www.novinky.cz/clanek/veda-skoly-velryba-uz-podruhe-uvazla-na-nemecke-melcine-40570414"
+  },
+  {
+    "dateTime": "2026-03-29 16:20:43",
+    "title": "Stav velryby v zátoce na severu Německa se zhoršil",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/nCTUX1iX5BWLrlOYQGMcmUo/3c99/keporkak-velryba-kytovec-melcina-pobrezi.jpeg",
+    "author": "Filip Šára, ČTK",
+    "link": "https://www.novinky.cz/clanek/veda-skoly-stav-velryby-v-zatoce-na-severu-nemecka-se-zhorsil-40570476"
+  },
+  {
+    "dateTime": "2026-03-30 09:46:40",
+    "title": "Záchranu velryby v Německu přenášejí kamery. Její stav se zhoršuje",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/nCTUX1iX5CGpNZOvrGM4P0s/4cbd/velryba.jpeg",
+    "author": "ČTK",
+    "link": "https://www.novinky.cz/clanek/zahranicni-na-severu-nemecka-uvazla-na-melcine-velryba-jeji-stav-se-zhorsuje-40570532"
+  },
+  {
+    "dateTime": "2026-03-30 21:43:55",
+    "title": "Velrybě, která v Německu uvázla na mělčině, se podařilo vyprostit",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/kcHp2YdDtCJexHOIhGNMXVG/0d0c.jpeg",
+    "author": "ČTK",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velrybe-ktera-v-nemecku-uvazla-na-melcine-se-podarilo-vyprostit-40570712"
+  },
+  {
+    "dateTime": "2026-03-31 15:32:44",
+    "title": "Velryba na severu Německa už potřetí uvázla na mělčině",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_p9_A/kcHp2YdDtBM3KVM0YGNnOKs/d6ac.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-na-severu-nemecka-uz-potreti-uvazla-na-melcine-40570882"
+  },
+  {
+    "dateTime": "2026-04-01 14:45:31",
+    "title": "Velryba uvízlá na severu Německa zřejmě uhyne",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtBM3KVNWhGOMhMM/f142/velryba-keporkak-nemecko-timmy.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-uvizla-na-severu-nemecka-zrejme-uhyne-40571122"
+  },
+  {
+    "dateTime": "2026-04-05 09:04:32",
+    "title": "Velryba Timmy uvázlá u německých břehů „plakala“ celou noc",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5DwDWzYqzGQavoh/fb96/velryba-nemecko.jpeg",
+    "author": "Jaroslav Zbožínek",
+    "link": "https://www.novinky.cz/clanek/zahranicni-velryba-timmy-uvazla-u-nemeckych-brehu-plakala-celou-noc-40571582"
+  },
+  {
+    "dateTime": "2026-04-06 13:02:36",
+    "title": "Má velryba Timmy šanci? Voda v zátoce nečekaně stoupá",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5DwDWzYqzGQavoh/fb96/velryba-nemecko.jpeg",
+    "author": "Lucie Hottková",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-ma-velryba-timmy-sanci-voda-v-zatoce-necekane-stoupa-40571648"
+  },
+  {
+    "dateTime": "2026-04-08 15:54:17",
+    "title": "Uvázlá velryba Timmy čeká na smrt",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5DwDWzYqzGQavoh/fb96/velryba-nemecko.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-uvazla-velryba-timmy-ceka-na-smrt-40572086"
+  },
+  {
+    "dateTime": "2026-04-16 20:19:06",
+    "title": "Úřady to vzdaly. Uvázlou velrybu Timmyho se pokouší zachránit milionáři",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5CGpNZ3svGXFLHB/85b5/nemecko-baltske-more-velryba-timmy.jpeg",
+    "author": "Jaromír Moravec",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-urady-to-vzdaly-uvazlou-velrybu-timmyho-se-pokousi-zachranit-milionari-40573837"
+  },
+  {
+    "dateTime": "2026-04-17 12:47:04",
+    "title": "Záchrana keporkaka Timmyho jde do finále",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtBwNESBHQ4GXdV31/ff66/image.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-zachrana-keporkaka-timmyho-jde-do-finale-40573971"
+  },
+  {
+    "dateTime": "2026-04-20 08:04:31",
+    "title": "Velryba v Německu se sama vyprostila a plave zátokou",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtCJexHzcvGXdOFm/72ba/keporkak-velryba-timmy-nemecko-zachrana.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-v-nemecku-se-sama-vyprostila-a-plave-zatokou-40574269"
+  },
+  {
+    "dateTime": "2026-04-20 13:16:02",
+    "title": "Velryba na severu Německa se po pěti kilometrech zase zastavila",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtCJexHzcvGXdOFm/72ba/keporkak-velryba-timmy-nemecko-zachrana.jpeg",
+    "author": "Jana Kotrášová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-na-severu-nemecka-se-po-peti-kilometrech-zase-zastavila-40574370"
+  },
+  {
+    "dateTime": "2026-04-21 10:41:40",
+    "title": "Uvázlá velryba Timmy bojuje o život",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5Do9kXBAl0GZwUHr/41a4/velryba-timmy-nemecko.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-uvazla-velryba-timmy-bojuje-o-zivot-40574520"
+  },
+  {
+    "dateTime": "2026-04-22 05:39:00",
+    "title": "Aktivisté Timmyho jen trápí, kritizuje veterinářka ",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtCDcb507iGZyoKF/0b1d.jpeg?fl=cro,0,0,3446,1938%7Cres,1200,,1%7Cjpg,80,,1",
+    "author": "Jana Kotrášová, Tomáš Skoupý",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-chaos-mezi-zachranari-velryby-na-severu-nemecka-chteji-se-zviditelnit-kritizuje-veterinarka-40574671"
+  },
+  {
+    "dateTime": "2026-04-28 10:43:20",
+    "title": "Velryba Timmy byla vyproštěna. V člunu míří do Severního moře",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5CNPfpBcoWGeAD64/ae5d/velryba-timmy.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-dnes-se-rozhodne-zachrana-keporkaka-timmyho-jde-do-finale-40575617"
+  },
+  {
+    "dateTime": "2026-04-29 11:04:58",
+    "title": "Timmy v člunu míří do Dánska. Je zesláblý",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtzYqGBAJJGecxzk/29d8/image.jpeg",
+    "author": "Martin Dohnal ",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-timmy-v-clunu-miri-do-danska-je-zeslably-40575828"
+  },
+  {
+    "dateTime": "2026-04-29 18:30:13",
+    "title": "Velryba Timmy se může utopit",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/kcHp2YdDtzYqGBAIqGeeOiL/e45a/keporkak-timmy-velryba.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-timmy-se-muze-utopit-40575985"
+  },
+  {
+    "dateTime": "2026-04-30 10:58:38",
+    "title": "Timmy je ve vodách Dánska. My ho zachraňovat nebudeme, vzkazuje Kodaň",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5DwDWzBfAiGfDO50/77e9/velryba-timmy-clun-nemecko.jpeg",
+    "author": "Martin Dohnal ",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-lod-s-timmym-uz-je-ve-vodach-danska-uvazle-velryby-nezachranujeme-upozornila-zeme-40576062"
+  },
+  {
+    "dateTime": "2026-05-01 10:25:43",
+    "title": "Velryba Timmy se zastavila těsně před Severním mořem",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5DwDWzBfAiGfDO50/77e9/velryba-timmy-clun-nemecko.jpeg",
+    "author": "Vojtěch Bauer",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-timmy-se-zastavila-tesne-pred-severnim-morem-40576218"
+  },
+  {
+    "dateTime": "2026-05-02 10:01:31",
+    "title": "Velryba Timmy je volná",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qA_A/nCTUX1iX5DwDWzBfAiGfDO50/77e9/velryba-timmy-clun-nemecko.jpeg",
+    "author": "Vojtěch Bauer",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-timmy-je-volna-40576263"
+  },
+  {
+    "dateTime": "2026-05-04 12:19:32",
+    "title": "Velryba Timmy žije",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/nCTUX1iX5BWZuTBL7ZGhaujw/186c.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-velryba-timmy-zije-40576466"
+  },
+  {
+    "dateTime": "2026-05-05 13:53:17",
+    "title": "Timmy se odmlčel, zřejmě je mrtvý",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/nCTUX1iX5BWZuTBMoiGiDpv4/3db2.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-timmy-se-odmlcel-zrejme-je-mrtvy-40576719"
+  },
+  {
+    "dateTime": "2026-05-15 05:19:18",
+    "title": "U dánského ostrova Anholt je mrtvá velryba, zřejmě Timmy",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/nCTUX1iX5CFdAHBTcKGnrL1v/85b5/timmy-velryba.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-u-danskeho-ostrova-anholt-je-mrtva-velryba-zrejme-timmy-40578257"
+  },
+  {
+    "dateTime": "2026-05-16 16:24:24",
+    "title": "Záběry mrtvého Timmyho? Experti zkoumají mršinu velryby u Dánska",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/kcHp2YdDtCJexHJSrGohiqX/a6f3/timmy-velryba-anholt-dansko-mrsina-keporkak.jpeg",
+    "author": "Zuzana Křesťanová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-zabery-mrtveho-timmyho-experti-zkoumaji-mrsinu-velryby-u-danska-40578482"
+  },
+  {
+    "dateTime": "2026-05-16 16:56:18",
+    "title": "Uhynulá velryba u Dánska je Timmy",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/kcHp2YdDtCJexHJSrGohiqX/a6f3/timmy-velryba-anholt-dansko-mrsina-keporkak.jpeg",
+    "author": "Jakub Dulínek",
+    "link": "https://www.novinky.cz/clanek/zahranicni-mrsina-u-danska-je-timmy-40578484"
+  },
+  {
+    "dateTime": "2026-05-17 20:18:10",
+    "title": "Osud Timmyho nechává Dány klidnými. Ostatky keporkaka zůstanou v moři",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/kcHp2YdDtCJexHJSrGohiqX/a6f3/timmy-velryba-anholt-dansko-mrsina-keporkak.jpeg",
+    "author": "Jakub Dulínek",
+    "link": "https://www.novinky.cz/clanek/zahranicni-osud-timmyho-nechava-dany-klidnymi-ostatky-keporkaka-zustanou-v-mori-40578542"
+  },
+  {
+    "dateTime": "2026-05-20 16:03:46",
+    "title": "Velryba Timmy byla samice",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/kcHp2YdDtCJexHJSrGohiqX/a6f3/timmy-velryba-anholt-dansko-mrsina-keporkak.jpeg",
+    "author": "ČTK",
+    "link": "https://www.novinky.cz/clanek/zahranicni-velryba-timmy-byla-samice-40579108"
+  },
+  {
+    "dateTime": "2026-05-21 12:17:36",
+    "title": "Nafouklou uhynulou velrybu Timmy táhnou do přístavu. Hrozí, že exploduje",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/kcHp2YdDtEBMvIUFGrW8Uw/0b96/anholt-dansko-keporkak-velryba-timmy-mrsina.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-nafouklou-uhynulou-velrybu-timmy-tahnou-do-pristavu-hrozi-ze-vybuchne-40579219"
+  },
+  {
+    "dateTime": "2026-05-22 13:16:28",
+    "title": "Tělo velryby Timmy se přiblížilo k pláži. Obyvatelé ostrova Anholt se děsí exploze",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/nCTUX1iX5bIUBBZMdGr8qKX/9b21/dansko-anholt-velryba-timmy-mrsina.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-telo-velryby-timmy-se-priblizilo-k-plazi-obyvatele-ostrova-anholt-se-desi-exploze-40579452"
+  },
+  {
+    "dateTime": "2026-05-29 11:59:14",
+    "title": "Letící kusy masa při explozi nafouknutého těla Timmyho mohou i zabít, varuje dánský expert",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qB_A/nO2CysqjGrCe62NCHyGwAo8l/777a/velryba.jpeg",
+    "author": "Jaroslav Zbožínek",
+    "link": "https://www.novinky.cz/clanek/zahranicni-letici-kusy-masa-pri-explozi-nafouknuteho-tela-timmyho-mohou-i-zabit-varuje-dansky-expert-40580579"
+  },
+  {
+    "dateTime": "2026-06-03 11:59:07",
+    "title": "I Francouzi mají svého Timmyho. Ti se ale s mrtvým plejtvákem moc nemazlili",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qC_A/nO2CysqjGrB9kIMGfyGy6pXe/4372/velryba.jpeg",
+    "author": "Jaroslav Zbožínek",
+    "link": "https://www.novinky.cz/clanek/koktejl-i-francouzi-maji-sveho-timmyho-na-rozdil-od-nemcu-a-danu-udelali-s-mrtvym-plejtvakem-kratky-proces-40581346"
+  },
+  {
+    "dateTime": "2026-06-09 12:37:55",
+    "title": "Uhynulou velrybu zvanou Timmy zpracují na bionaftu a biomasu",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qC_A/kQMlcCt5zmC5zFHFRqG2eYsB/ac31/timmy-anholt.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-uhynulou-velrybu-zvanou-timmy-zpracuji-na-bionaftu-a-biomasu-40582335"
+  },
+  {
+    "dateTime": "2026-06-12 20:25:45",
+    "title": "Poslední hodiny velryby Timmy. Byla analyzována data ze sledovacího zařízení",
+    "imageUrl": "https://d15-a.sdn.cz/d_15/c_img_qC_A/nO2CysqjGrRICCMjQG4TTfU/d3a7/dansko-keporkak-velryba-timmy-mrsina.jpeg",
+    "author": "Jitka Zadražilová",
+    "link": "https://www.novinky.cz/clanek/zahranicni-evropa-posledni-hodiny-velryby-timmy-byla-analyzovana-data-ze-sledovaciho-zarizeni-40583004"
+  }
+];
+    const formatter = new Intl.DateTimeFormat('cs-CZ', { dateStyle: 'medium', timeStyle: 'short' });
+    const shortDateFormatter = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'short' });
+    const monthFormatter = new Intl.DateTimeFormat('cs-CZ', { month: 'long', year: 'numeric' });
+    const dayFormatter = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 1 });
+    const timeline = document.getElementById('timeline');
+    const filters = document.getElementById('filters');
+    const empty = document.getElementById('empty');
+    let activeAuthor = 'Všichni';
+
+    function daysBetween(a, b) {
+      return Math.abs(new Date(b.dateTime.replace(' ', 'T') + '+01:00') - new Date(a.dateTime.replace(' ', 'T') + '+01:00')) / 86400000;
+    }
+
+    function articleDate(article) {
+      return new Date(article.dateTime.replace(' ', 'T') + '+01:00');
+    }
+
+    function monthKey(article) {
+      const date = articleDate(article);
+      return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
+    }
+
+    function eventGap(previous, current) {
+      if (!previous) return 0;
+      const days = Math.abs((articleDate(current) - articleDate(previous)) / 86400000);
+      return Math.round(Math.min(105, Math.max(18, days * 9)));
+    }
+
+    function articleByTitle(fragment) {
+      return articles.find((article) => article.title.toLocaleLowerCase('cs-CZ').includes(fragment.toLocaleLowerCase('cs-CZ')));
+    }
+
+    function articleByLinkId(id) {
+      return articles.find((article) => article.link.endsWith(String(id)));
+    }
+
+    function timelineMilestones() {
+      const gaps = articles.slice(1).map((article, index) => ({
+        days: daysBetween(articles[index], article),
+        dateTime: article.dateTime,
+        after: articles[index],
+        before: article,
+      }));
+      const biggest = gaps.reduce((best, gap) => gap.days > best.days ? gap : best, gaps[0]);
+      const shortest = gaps.reduce((best, gap) => gap.days < best.days ? gap : best, gaps[0]);
+      const fixed = [
+        ['Začátek příběhu', 'První uvíznutí u německých břehů', articleByLinkId(40569605)],
+        ['Záchrana nabírá obrátky', 'První velká vyprošťovací akce', articleByLinkId(40570205)],
+        ['Timmy dostává jméno', 'Příběh už sledují i čtenáři pod jménem Timmy', articleByTitle('plakala')],
+        ['Zlom', 'Soukromá záchrana po rozhodnutí úřadů', articleByTitle('milionáři')],
+        ['Vyproštění', 'Timmy míří v člunu do Severního moře', articleByLinkId(40575617)],
+        ['Ticho', 'Sledovací signál se odmlčel', articleByTitle('odmlčel')],
+        ['Konec pátrání', 'U Dánska je nalezena mrtvá velryba', articleByLinkId(40578257)],
+        ['Poslední stopa', 'Data ze zařízení popisují poslední hodiny', articleByLinkId(40583004)],
+      ].filter(([, , article]) => article).map(([label, title, article]) => ({
+        type: 'milestone',
+        label,
+        title,
+        dateTime: article.dateTime,
+        special: false,
+      }));
+
+      return [
+        ...fixed,
+        {
+          type: 'milestone',
+          label: 'Největší mezera',
+          title: gapLabel(biggest.days) + ' bez článku',
+          dateTime: biggest.before.dateTime,
+          special: true,
+        },
+        {
+          type: 'milestone',
+          label: 'Nejkratší mezera',
+          title: gapLabel(shortest.days) + ' mezi články',
+          dateTime: shortest.before.dateTime,
+          special: true,
+        },
+      ];
+    }
+
+    function makeMilestoneNode(milestone, previousItem) {
+      const node = document.createElement('aside');
+      node.className = 'milestone' + (milestone.special ? ' special' : '');
+      node.style.setProperty('--gap', eventGap(previousItem, milestone) + 'px');
+
+      const badge = document.createElement('div');
+      badge.className = 'milestone-badge';
+      const label = document.createElement('span');
+      label.className = 'milestone-label';
+      label.textContent = milestone.label;
+      const title = document.createElement('span');
+      title.className = 'milestone-title';
+      title.textContent = milestone.title;
+      badge.append(label, title);
+      node.append(badge);
+      return node;
+    }
+
+    function gapLabel(days) {
+      if (days < 1) return Math.round(days * 24) + ' h';
+      if (Math.abs(days - 1) < 0.05) return '1 den';
+      if (days < 2) return dayFormatter.format(days) + ' dne';
+      return dayFormatter.format(days) + ' dní';
+    }
+
+    function authorCounts() {
+      const counts = new Map();
+      for (const article of articles) {
+        for (const author of article.author.split(',').map((value) => value.trim()).filter(Boolean)) {
+          counts.set(author, (counts.get(author) || 0) + 1);
+        }
+      }
+      return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'cs-CZ'));
+    }
+
+    function renderStats() {
+      const gaps = articles.slice(1).map((article, index) => ({ days: daysBetween(articles[index], article), from: articles[index], to: article }));
+      const biggest = gaps.reduce((best, gap) => gap.days > best.days ? gap : best, gaps[0]);
+      const shortest = gaps.reduce((best, gap) => gap.days < best.days ? gap : best, gaps[0]);
+      const top = authorCounts()[0];
+
+      document.getElementById('totalStat').textContent = String(articles.length);
+      document.getElementById('biggestGap').textContent = gapLabel(biggest.days);
+      document.getElementById('shortestGap').textContent = gapLabel(shortest.days);
+      document.getElementById('topAuthor').textContent = top ? top[0] + ' (' + top[1] + ')' : '—';
+    }
+
+    function renderFilters() {
+      filters.replaceChildren();
+      const entries = [['Všichni', articles.length], ...authorCounts()];
+      for (const [author, count] of entries) {
+        const button = document.createElement('button');
+        button.className = 'filter';
+        button.type = 'button';
+        button.textContent = author + ' (' + count + ')';
+        button.setAttribute('aria-pressed', String(author === activeAuthor));
+        button.addEventListener('click', () => {
+          activeAuthor = author;
+          renderFilters();
+          renderTimeline();
+        });
+        filters.append(button);
+      }
+    }
+
+    function visibleArticles() {
+      if (activeAuthor === 'Všichni') return articles;
+      return articles.filter((article) => article.author.split(',').map((value) => value.trim()).includes(activeAuthor));
+    }
+
+    function renderTimeline() {
+      const visible = visibleArticles();
+      timeline.replaceChildren();
+      document.getElementById('count').textContent = visible.length + ' z ' + articles.length;
+      empty.classList.toggle('hidden', visible.length > 0);
+      const milestones = activeAuthor === 'Všichni' ? timelineMilestones() : [];
+      const items = [
+        ...visible.map((article) => ({ type: 'article', ...article })),
+        ...milestones,
+      ].sort((a, b) => articleDate(a) - articleDate(b) || (a.type === 'milestone' ? -1 : 1));
+      let previousItem = null;
+      let previousMonth = '';
+      let renderedArticles = 0;
+
+      for (const [index, item] of items.entries()) {
+        const currentMonth = monthKey(item);
+        if (currentMonth !== previousMonth) {
+          const marker = document.createElement('div');
+          marker.className = 'month-marker';
+          marker.style.setProperty('--gap', (previousItem ? Math.max(24, eventGap(previousItem, item) - 20) : 0) + 'px');
+          const label = document.createElement('span');
+          label.textContent = monthFormatter.format(articleDate(item));
+          marker.append(label);
+          timeline.append(marker);
+          previousMonth = currentMonth;
+        }
+
+        if (item.type === 'milestone') {
+          timeline.append(makeMilestoneNode(item, previousItem));
+          previousItem = item;
+          continue;
+        }
+
+        const article = item;
+
+        const event = document.createElement('article');
+        event.className = 'event ' + (index % 2 === 0 ? 'top' : 'bottom');
+        event.style.setProperty('--gap', eventGap(previousItem, article) + 'px');
+
+        const tick = document.createElement('div');
+        tick.className = 'tick';
+        const dot = document.createElement('div');
+        dot.className = 'dot';
+        const tickDate = document.createElement('div');
+        tickDate.className = 'tick-date';
+        tickDate.textContent = shortDateFormatter.format(articleDate(article));
+        tick.append(dot, tickDate);
+
+        const stem = document.createElement('div');
+        stem.className = 'stem';
+
+        const card = document.createElement('a');
+        card.className = 'card';
+        card.href = article.link;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+
+        const image = document.createElement('img');
+        image.className = 'thumb';
+        image.loading = renderedArticles < 4 ? 'eager' : 'lazy';
+        image.decoding = 'async';
+        image.src = article.imageUrl;
+        image.alt = article.title;
+
+        const body = document.createElement('div');
+        body.className = 'body';
+
+        const date = document.createElement('div');
+        date.className = 'date';
+        date.textContent = formatter.format(new Date(article.dateTime.replace(' ', 'T') + '+01:00'));
+
+        const title = document.createElement('h2');
+        title.textContent = article.title;
+
+        const author = document.createElement('div');
+        author.className = 'author';
+        author.textContent = article.author;
+
+        body.append(date, title, author);
+        card.append(image, body);
+        event.append(tick, stem, card);
+        timeline.append(event);
+        previousItem = article;
+        renderedArticles += 1;
+      }
+
+      requestAnimationFrame(() => {
+        timeline.style.setProperty('--rail-width', timeline.scrollWidth + 'px');
+      });
+    }
+
+    renderStats();
+    renderFilters();
+    renderTimeline();
+  </script>
+</body>
+</html>
