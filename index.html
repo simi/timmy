@@ -112,6 +112,9 @@
       scroll-snap-type: x mandatory;
       scrollbar-color: var(--line) rgba(255,255,255,.6);
     }
+    .timeline.animating {
+      scroll-snap-type: none;
+    }
     .timeline::before {
       background:
         linear-gradient(90deg, transparent 0, rgba(9,135,184,.28) 1.5rem, var(--line) 4rem, var(--line) calc(100% - 4rem), rgba(9,135,184,.28) calc(100% - 1.5rem), transparent 100%),
@@ -361,7 +364,7 @@
       .timeline { --rail-y: 230px; min-height: 520px; padding-left: 1rem; padding-right: 1rem; }
       .timeline-nav {
         align-items: center;
-        background: rgba(6, 54, 75, .72);
+        background: rgba(6, 54, 75, .42);
         border: 0;
         color: white;
         cursor: pointer;
@@ -369,7 +372,7 @@
         font-size: 2rem;
         font-weight: 900;
         justify-content: center;
-        opacity: .92;
+        opacity: .68;
         position: absolute;
         top: 1.25rem;
         bottom: 3rem;
@@ -378,7 +381,7 @@
       }
       .timeline-nav:disabled {
         cursor: default;
-        opacity: .22;
+        opacity: .16;
       }
       .timeline-nav.prev {
         border-radius: 0 20px 20px 0;
@@ -858,8 +861,12 @@
         : [...targets].reverse().find((item) => targetCenter(item) < viewportCenter - 8);
 
       if (!target) return;
-      timeline.scrollTo({ left: targetCenter(target) - timeline.clientWidth / 2, behavior: 'auto' });
-      updateTimelineNav();
+      timeline.classList.add('animating');
+      timeline.scrollTo({ left: targetCenter(target) - timeline.clientWidth / 2, behavior: 'smooth' });
+      window.setTimeout(() => {
+        timeline.classList.remove('animating');
+        updateTimelineNav();
+      }, 420);
     }
 
     function renderTimeline() {
